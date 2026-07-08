@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loja de Carros - AWS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        .container {
+            max-width: 900px;
+            margin-top: 3rem;
+            margin-bottom: 3rem;
+        }
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            background-color: transparent;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 0;
+            padding-top: 1.5rem;
+        }
+        .table th {
+            color: #6c757d;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+        /* Alerta flutuante centralizado no topo */
+        #msgAlert {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1050;
+            min-width: 300px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+
+<div id="msgAlert" class="alert d-none" role="alert"></div>
+
+<div class="container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark mb-0">Loja de Carros</h2>
+        <button id="btnLogout" class="btn btn-outline-danger btn-sm d-none">Sair do Sistema</button>
+    </div>
+
+    <div class="card d-none" id="configCard">
+        <div class="card-body">
+            <label class="form-label text-muted small">URL da API (Backend Spring Boot)</label>
+            <div class="input-group">
+                <input type="text" id="apiUrl" class="form-control" value="http://localhost:8080">
+                <button id="btnSalvarUrl" class="btn btn-outline-secondary">Salvar URL</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" id="loginCard" style="max-width: 400px; margin: 0 auto;">
+        <div class="card-body p-4">
+            <h4 class="fw-bold text-center mb-4">Acesso Restrito</h4>
+            <div class="mb-3">
+                <label class="form-label text-muted small">Usuário</label>
+                <input type="text" id="login" class="form-control form-control-lg" placeholder="ex: admin">
+            </div>
+            <div class="mb-4">
+                <label class="form-label text-muted small">Senha</label>
+                <input type="password" id="senha" class="form-control form-control-lg" placeholder="******">
+            </div>
+            <button id="btnLogin" class="btn btn-primary btn-lg w-100">Entrar</button>
+        </div>
+    </div>
+
+    <div class="card d-none" id="crudCard">
+        <div class="card-header">
+            <h5 id="formTitle" class="fw-bold">Cadastrar Novo Carro</h5>
+        </div>
+        <div class="card-body">
+            <input type="hidden" id="carroId">
+            <div class="row g-3">
+                <div class="col-md-7">
+                    <label class="form-label text-muted small">Modelo</label>
+                    <input type="text" id="modelo" class="form-control" placeholder="ex: Corolla XEI">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label text-muted small">Ano</label>
+                    <input type="number" id="ano" class="form-control" placeholder="ex: 2023">
+                </div>
+            </div>
+            <div class="mt-4 d-flex gap-2">
+                <button id="btnSalvarCarro" class="btn btn-success px-4">Salvar Registro</button>
+                <button id="btnCancelarEdicao" class="btn btn-light border d-none">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card d-none" id="listaCard">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0">Estoque Atual</h5>
+            <button id="btnAtualizarLista" class="btn btn-sm btn-light border">🔄 Atualizar</button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-borderless align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">ID</th>
+                        <th>Modelo</th>
+                        <th>Ano</th>
+                        <th class="text-end pe-4">Ações</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tabelaCarros">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // === CONFIGURAÇÕES GERAIS ===
+    let API_URL = localStorage.getItem('apiUrl') || 'http://localhost:8080';
+    document.getElementById('apiUrl').value = API_URL;
+    let TOKEN = null;
+
+    // === SISTEMA DE MENSAGENS (BOOTSTRAP ALERTS) ===
+    function showMsg(text, type) {
+        const msgAlert = document.getElementById('msgAlert');
+        msgAlert.textContent = text;
+
+        // Remove as classes de cor anteriores e a classe d-none
+        msgAlert.className = 'alert';
+
+        if(type === 'error') {
+            msgAlert.classList.add('alert-danger');
+        } else if (type === 'success') {
+            msgAlert.classList.add('alert-success');
+        } else {
+            msgAlert.classList.add('alert-info');
+        }
+
+        // Exibe o alerta
+        msgAlert.classList.add('show');
+        msgAlert.classList.remove('d-none');
+
+        // Oculta após 3.5 segundos
+        setTimeout(() => {
+            msgAlert.classList.add('d-none');
+            msgAlert.classList.remove('show');
+        }, 3500);
+    }
+
+    document.getElementById('btnSalvarUrl').addEventListener('click', () => {
+        API_URL = document.getElementById('apiUrl').value.trim();
+        localStorage.setItem('apiUrl', API_URL);
+        showMsg('Conexão configurada para: ' + API_URL, 'success');
+    });
+
+    // === LOGIN ===
+    document.getElementById('btnLogin').addEventListener('click', async () => {
+        const username = document.getElementById('login').value.trim();
+        const password = document.getElementById('senha').value.trim();
+
+        if (!username || !password) {
+            showMsg('Preencha os dados de acesso.', 'error');
+            return;
+        }
+
+        // Desabilita o botão para não enviar duas vezes
+        const btn = document.getElementById('btnLogin');
+        btn.disabled = true;
+        btn.innerText = 'Autenticando...';
+
+        try {
+            const res = await fetch(API_URL + '/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (!res.ok) throw new Error('Credenciais recusadas pelo servidor.');
+
+            const textData = await res.text();
+            try {
+                const jsonData = JSON.parse(textData);
+                TOKEN = jsonData.token || jsonData.jwt || textData;
+            } catch (e) {
+                TOKEN = textData;
+            }
+
+            showMsg('Acesso autorizado!', 'success');
+
+            // Transição de telas (Substitui d-none do Bootstrap)
+            document.getElementById('loginCard').classList.add('d-none');
+            document.getElementById('configCard').classList.add('d-none');
+            document.getElementById('crudCard').classList.remove('d-none');
+            document.getElementById('listaCard').classList.remove('d-none');
+            document.getElementById('btnLogout').classList.remove('d-none');
+
+            carregarCarros();
+        } catch (err) {
+            showMsg(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Entrar';
+        }
+    });
+
+    // === LOGOUT ===
+    document.getElementById('btnLogout').addEventListener('click', () => {
+        TOKEN = null;
+        document.getElementById('loginCard').classList.remove('d-none');
+        // document.getElementById('configCard').classList.remove('d-none'); // Opcional exibir config de novo
+        document.getElementById('crudCard').classList.add('d-none');
+        document.getElementById('listaCard').classList.add('d-none');
+        document.getElementById('btnLogout').classList.add('d-none');
+
+        // Limpa form e tabela
+        limparForm();
+        document.getElementById('tabelaCarros').innerHTML = '';
+    });
+
+    // === CARREGAR CARROS ===
+    async function carregarCarros() {
+        try {
+            const res = await fetch(API_URL + '/carro', {
+                headers: { 'Authorization': 'Bearer ' + TOKEN }
+            });
+
+            if (res.status === 403) throw new Error('Acesso negado (Sessão inválida).');
+            if (!res.ok) throw new Error('Falha de comunicação: ' + res.status);
+
+            const carros = await res.json();
+            const tbody = document.getElementById('tabelaCarros');
+            tbody.innerHTML = '';
+
+            if(carros.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">Nenhum carro no estoque.</td></tr>`;
+                return;
+            }
+
+            carros.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="ps-4 fw-bold text-muted">#${c.id}</td>
+                    <td class="fw-medium">${c.modelo || '-'}</td>
+                    <td>${c.ano || '-'}</td>
+                    <td class="text-end pe-4">
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="prepararEdicao(${c.id}, '${c.modelo || ''}', ${c.ano || ''})">Editar</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deletarCarro(${c.id})">Excluir</button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+        } catch (err) {
+            showMsg(err.message, 'error');
+            if (err.message.includes('Acesso negado')) document.getElementById('btnLogout').click();
+        }
+    }
+
+    document.getElementById('btnAtualizarLista').addEventListener('click', carregarCarros);
+
+    // === EDIÇÃO ===
+    window.prepararEdicao = function (id, modelo, ano) {
+        document.getElementById('carroId').value = id;
+        document.getElementById('modelo').value = modelo;
+        document.getElementById('ano').value = ano;
+
+        document.getElementById('formTitle').textContent = 'Editando Registro #' + id;
+        document.getElementById('formTitle').classList.add('text-primary');
+        document.getElementById('btnCancelarEdicao').classList.remove('d-none');
+        document.getElementById('btnSalvarCarro').textContent = 'Atualizar';
+        document.getElementById('btnSalvarCarro').classList.replace('btn-success', 'btn-primary');
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.getElementById('btnCancelarEdicao').addEventListener('click', limparForm);
+
+    function limparForm() {
+        document.getElementById('carroId').value = '';
+        document.getElementById('modelo').value = '';
+        document.getElementById('ano').value = '';
+
+        document.getElementById('formTitle').textContent = 'Cadastrar Novo Carro';
+        document.getElementById('formTitle').classList.remove('text-primary');
+        document.getElementById('btnCancelarEdicao').classList.add('d-none');
+
+        const btnSalvar = document.getElementById('btnSalvarCarro');
+        btnSalvar.textContent = 'Salvar Registro';
+        btnSalvar.classList.replace('btn-primary', 'btn-success');
+    }
+
+    // === SALVAR/ATUALIZAR ===
+    document.getElementById('btnSalvarCarro').addEventListener('click', async () => {
+        const id = document.getElementById('carroId').value;
+        const modelo = document.getElementById('modelo').value.trim();
+        const anoStr = document.getElementById('ano').value;
+        const ano = parseInt(anoStr);
+
+        if (!modelo || !anoStr) {
+            showMsg('Por favor, informe o modelo e o ano.', 'error');
+            return;
+        }
+
+        // O payload agora bate 100% com o seu modelo Carro.java
+        const payload = { modelo: modelo, ano: ano };
+        const btn = document.getElementById('btnSalvarCarro');
+        btn.disabled = true;
+
+        try {
+            let res;
+            if (id) {
+                res = await fetch(API_URL + '/carro/' + id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN },
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                res = await fetch(API_URL + '/carro/salvar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN },
+                    body: JSON.stringify(payload)
+                });
+            }
+
+            if (res.status === 403) throw new Error('Permissão negada.');
+            if (!res.ok) throw new Error('Erro no servidor (' + res.status + ')');
+
+            showMsg(id ? 'Carro atualizado!' : 'Carro adicionado ao estoque!', 'success');
+            limparForm();
+            carregarCarros();
+        } catch (err) {
+            showMsg(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
+    // === EXCLUIR ===
+    window.deletarCarro = async function (id) {
+        if (!confirm('Esta ação é irreversível. Excluir carro #' + id + '?')) return;
+
+        try {
+            const res = await fetch(API_URL + '/carro/' + id, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + TOKEN }
+            });
+
+            if (res.status === 403) throw new Error('Você não tem permissão para excluir.');
+            if (!res.ok) throw new Error('Erro de servidor (' + res.status + ')');
+
+            showMsg('Registro apagado com sucesso.', 'success');
+            carregarCarros();
+        } catch (err) {
+            showMsg(err.message, 'error');
+        }
+    }
+</script>
+</body>
+</html>
