@@ -1,51 +1,66 @@
 package br.org.edu.ifrn.lojacarro.controllers;
 
+import br.org.edu.ifrn.lojacarro.dto.LoginRequestDto;
+import br.org.edu.ifrn.lojacarro.dto.LoginResponseDto;
+import br.org.edu.ifrn.lojacarro.dto.UsuarioRequestDto;
 import br.org.edu.ifrn.lojacarro.model.Usuario;
 import br.org.edu.ifrn.lojacarro.repository.UsuarioRepository;
 import br.org.edu.ifrn.lojacarro.security.JwtUtil;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.access.prepost.PreAuthorize;
-
-import java.util.Map;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private JwtUtil jwtUtil;
+    public AuthController(
+            UsuarioRepository usuarioRepository,
+            PasswordEncoder passwordEncoder,
+            JwtUtil jwtUtil
+    ) {
+        this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
+    }
 
     @PostMapping("/registrar")
-    @PreAuthorize("hasRole('GERENTE')") // Apenas usuários com papel GERENTE podem cadastrar outros usuários
-    public ResponseEntity<String> registrar(@RequestBody Usuario usuario) {
-        // Garante que o papel venha com o prefixo correto esperado pelo Spring Security
-        if(!usuario.getRole().startsWith("ROLE_")) {
-            usuario.setRole("ROLE_" + usuario.getRole().toUpperCase());
+    @PreAuthorize("hasRole('GERENTE')")
+    public ResponseEntity<String> registrar(@RequestBody UsuarioRequestDto request) {
+        Usuario usuario = new Usuario();
+        usuario.setUsername(request.getUsername());
+        usuario.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        String role = request.getRole();
+        if (role != null && !role.startsWith("ROLE_")) {
+            role = "ROLE_" + role.toUpperCase();
         }
-        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+        usuario.setRole(role);
+
         usuarioRepository.save(usuario);
         return ResponseEntity.ok("Usuário cadastrado com sucesso!");
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody Usuario loginReq) {
-        Usuario usuario = usuarioRepository.findByUsername(loginReq.getUsername())
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto request) {
+        Usuario usuario = usuarioRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Usuário não encontrado"
+                ));
 
-        if (passwordEncoder.matches(loginReq.getPassword(), usuario.getPassword())) {
-            String token = jwtUtil.generateToken(usuario.getUsername(), usuario.getRole());
-            return ResponseEntity.ok(Map.of("token", token));
+        if (!passwordEncoder.matches(request.getPassword(), usuario.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas");
         }
 
-        return ResponseEntity.status(401).body(Map.of("erro", "Credenciais inválidas"));
+        String token = jwtUtil.generateToken(usuario.getUsername(), usuario.getRole());
+        return ResponseEntity.ok(new LoginResponseDto(token));
     }
 }

@@ -1,63 +1,75 @@
-
 package br.org.edu.ifrn.lojacarro.controllers;
 
-
+import br.org.edu.ifrn.lojacarro.dto.CarroRequestDto;
+import br.org.edu.ifrn.lojacarro.dto.CarroResponseDto;
 import br.org.edu.ifrn.lojacarro.model.Carro;
 import br.org.edu.ifrn.lojacarro.services.CarroService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/carro")
 public class CarroController {
 
-    @Autowired
-    private CarroService carroService;
+    private final CarroService carroService;
 
-    // Salvar carro (corrigido para POST)
-    @PostMapping("salvar")
-    @PreAuthorize("hasRole('GERENTE')") // Só gerente salva
-    public ResponseEntity<Carro> salvarCarro(@Valid @RequestBody Carro c) {
-        Carro savedCarro = carroService.save(c);
-        return ResponseEntity.ok(savedCarro);
+    public CarroController(CarroService carroService) {
+        this.carroService = carroService;
     }
 
-    // Atualizar carro (por ID)
+    @PostMapping("/salvar")
+    @PreAuthorize("hasRole('GERENTE')")
+    public ResponseEntity<CarroResponseDto> salvarCarro(@Valid @RequestBody CarroRequestDto request) {
+        Carro carro = new Carro();
+        carro.setModelo(request.getModelo());
+        carro.setAno(request.getAno());
+
+        Carro savedCarro = carroService.save(carro);
+        return ResponseEntity.ok(toResponse(savedCarro));
+    }
+
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('GERENTE')") // Só gerente atualiza
-    public ResponseEntity<Carro> atualizarCarro(@PathVariable Long id, @RequestBody Carro c) {
-        c.setId(id); // Garante que o objeto vai com o ID da URL
-        Carro atualizado = carroService.update(c); // O service vai validar se existe
-        return ResponseEntity.ok(atualizado);
+    @PreAuthorize("hasRole('GERENTE')")
+    public ResponseEntity<CarroResponseDto> atualizarCarro(@PathVariable Long id, @RequestBody CarroRequestDto request) {
+        Carro carro = new Carro();
+        carro.setId(id);
+        carro.setModelo(request.getModelo());
+        carro.setAno(request.getAno());
+
+        Carro atualizado = carroService.update(carro);
+        return ResponseEntity.ok(toResponse(atualizado));
     }
 
-    // Deletar carro (por ID)
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('GERENTE')") // Só gerente deleta
+    @PreAuthorize("hasRole('GERENTE')")
     public ResponseEntity<Void> deletarCarro(@PathVariable Long id) {
-        carroService.deleteById(id); // O service vai validar se existe antes de deletar
-        return ResponseEntity.noContent().build(); // Retorna 204 se der certo
+        carroService.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
-    // Pesquisar carro por ID
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('VENDEDOR', 'GERENTE')") // Ambos podem visualizar
-    public ResponseEntity<Carro> pesquisarCarroPorId(@PathVariable Long id) {
-        Carro carro = carroService.findByIdOrThrow(id); // Já joga o 404 se não achar
-        return ResponseEntity.ok(carro);
+    @PreAuthorize("hasAnyRole('VENDEDOR', 'GERENTE')")
+    public ResponseEntity<CarroResponseDto> pesquisarCarroPorId(@PathVariable Long id) {
+        Carro carro = carroService.findByIdOrThrow(id);
+        return ResponseEntity.ok(toResponse(carro));
     }
 
-    // Pesquisar todos os carros
     @GetMapping
-    @PreAuthorize("hasAnyRole('VENDEDOR', 'GERENTE')") // Ambos podem listar
-    public ResponseEntity<List<Carro>> pesquisarTodosCarros() {
-        List<Carro> carros = carroService.findAll();
+    @PreAuthorize("hasAnyRole('VENDEDOR', 'GERENTE')")
+    public ResponseEntity<List<CarroResponseDto>> pesquisarTodosCarros() {
+        List<CarroResponseDto> carros = carroService.findAll()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+
         return ResponseEntity.ok(carros);
+    }
+
+    private CarroResponseDto toResponse(Carro carro) {
+        return new CarroResponseDto(carro.getId(), carro.getModelo(), carro.getAno());
     }
 }

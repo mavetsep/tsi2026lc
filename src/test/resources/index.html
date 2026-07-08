@@ -177,6 +177,7 @@
                 const jsonData = JSON.parse(textData);
                 token = jsonData.token || jsonData.jwt || textData;
             } catch (error) {
+                console.warn('Resposta de login não veio em JSON; token será tratado como texto puro.', error);
                 token = textData;
             }
 

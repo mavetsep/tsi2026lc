@@ -2,7 +2,6 @@ package br.org.edu.ifrn.lojacarro.services;
 
 import br.org.edu.ifrn.lojacarro.model.Carro;
 import br.org.edu.ifrn.lojacarro.repository.CarroRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,8 +14,11 @@ import java.util.Optional;
 @Service
 public class CarroService {
 
-    @Autowired
-    public CarroRepository carroRepository;
+    private final CarroRepository carroRepository;
+
+    public CarroService(CarroRepository carroRepository) {
+        this.carroRepository = carroRepository;
+    }
 
     private void validarRegrasDeNegocio(Carro carro) {
         int anoAtual = LocalDate.now(ZoneId.of("America/Sao_Paulo")).getYear();
