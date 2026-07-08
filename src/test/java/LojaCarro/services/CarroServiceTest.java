@@ -1,8 +1,7 @@
-package LojaCarro.services;
+package br.org.edu.ifrn.lojacarro.services;
 
-import br.org.edu.ifrn.LojaCarro.model.Carro;
-import br.org.edu.ifrn.LojaCarro.repository.CarroRepository;
-import br.org.edu.ifrn.LojaCarro.services.CarroService;
+import br.org.edu.ifrn.lojacarro.model.Carro;
+import br.org.edu.ifrn.lojacarro.repository.CarroRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class CarroServiceTest {
+class CarroServiceTest {
 
     @Mock
     private CarroRepository carroRepository;
@@ -32,7 +31,7 @@ public class CarroServiceTest {
     private Carro carroValido;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         carroValido = new Carro();
         carroValido.setId(1L);
         carroValido.setModelo("Toyota Corolla");
@@ -40,9 +39,7 @@ public class CarroServiceTest {
     }
 
     @Test
-    public void testSaveComSucesso() {
-        System.out.println("=== TESTE SERVICE: SALVAR CARRO ===");
-
+    void testSaveComSucesso() {
         when(carroRepository.save(any(Carro.class))).thenReturn(carroValido);
 
         Carro salvo = carroService.save(carroValido);
@@ -53,24 +50,18 @@ public class CarroServiceTest {
     }
 
     @Test
-    public void testSaveFalhaAnoFuturo() {
-        System.out.println("=== TESTE SERVICE: SALVAR COM ANO NO FUTURO ===");
-
+    void testSaveFalhaAnoFuturo() {
         Carro carroInvalido = new Carro();
         carroInvalido.setModelo("Honda Civic");
         carroInvalido.setAno(LocalDate.now().getYear() + 1);
 
-        assertThrows(ResponseStatusException.class, () -> {
-            carroService.save(carroInvalido);
-        });
+        assertThrows(ResponseStatusException.class, () -> carroService.save(carroInvalido));
 
         verify(carroRepository, never()).save(any(Carro.class));
     }
 
     @Test
-    public void testUpdateComSucesso() {
-        System.out.println("=== TESTE SERVICE: ATUALIZAR CARRO ===");
-
+    void testUpdateComSucesso() {
         when(carroRepository.existsById(1L)).thenReturn(true);
         when(carroRepository.save(any(Carro.class))).thenReturn(carroValido);
 
@@ -82,9 +73,7 @@ public class CarroServiceTest {
     }
 
     @Test
-    public void testUpdateFalhaIdInexistente() {
-        System.out.println("=== TESTE SERVICE: ATUALIZAR COM ID INEXISTENTE ===");
-
+    void testUpdateFalhaIdInexistente() {
         Carro fantasma = new Carro();
         fantasma.setId(999L);
         fantasma.setModelo("Chevrolet Onix");
@@ -92,44 +81,32 @@ public class CarroServiceTest {
 
         when(carroRepository.existsById(999L)).thenReturn(false);
 
-        assertThrows(ResponseStatusException.class, () -> {
-            carroService.update(fantasma);
-        });
+        assertThrows(ResponseStatusException.class, () -> carroService.update(fantasma));
 
         verify(carroRepository, never()).save(fantasma);
     }
 
     @Test
-    public void testDeleteComSucesso() {
-        System.out.println("=== TESTE SERVICE: DELETAR CARRO ===");
-
+    void testDeleteComSucesso() {
         when(carroRepository.existsById(1L)).thenReturn(true);
         doNothing().when(carroRepository).deleteById(1L);
 
-        assertDoesNotThrow(() -> {
-            carroService.deleteById(1L);
-        });
+        assertDoesNotThrow(() -> carroService.deleteById(1L));
 
         verify(carroRepository, times(1)).deleteById(1L);
     }
 
     @Test
-    public void testDeleteFalhaIdInexistente() {
-        System.out.println("=== TESTE SERVICE: DELETAR COM ID INEXISTENTE ===");
-
+    void testDeleteFalhaIdInexistente() {
         when(carroRepository.existsById(999L)).thenReturn(false);
 
-        assertThrows(ResponseStatusException.class, () -> {
-            carroService.deleteById(999L);
-        });
+        assertThrows(ResponseStatusException.class, () -> carroService.deleteById(999L));
 
         verify(carroRepository, never()).deleteById(999L);
     }
 
     @Test
-    public void testFindByIdComSucesso() {
-        System.out.println("=== TESTE SERVICE: BUSCAR POR ID ===");
-
+    void testFindByIdComSucesso() {
         when(carroRepository.findById(1L)).thenReturn(Optional.of(carroValido));
 
         Carro encontrado = carroService.findByIdOrThrow(1L);
@@ -139,20 +116,14 @@ public class CarroServiceTest {
     }
 
     @Test
-    public void testFindByIdFalhaIdInexistente() {
-        System.out.println("=== TESTE SERVICE: BUSCAR POR ID INEXISTENTE ===");
-
+    void testFindByIdFalhaIdInexistente() {
         when(carroRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(ResponseStatusException.class, () -> {
-            carroService.findByIdOrThrow(999L);
-        });
+        assertThrows(ResponseStatusException.class, () -> carroService.findByIdOrThrow(999L));
     }
 
     @Test
-    public void testFindAllComDados() {
-        System.out.println("=== TESTE SERVICE: LISTAR TODOS COM REGISTROS ===");
-
+    void testFindAllComDados() {
         List<Carro> lista = new ArrayList<>();
         lista.add(carroValido);
         when(carroRepository.findAll()).thenReturn(lista);
@@ -164,9 +135,7 @@ public class CarroServiceTest {
     }
 
     @Test
-    public void testFindAllRetornandoListaVazia() {
-        System.out.println("=== TESTE SERVICE: LISTAR TODOS COM BANCO VAZIO ===");
-
+    void testFindAllRetornandoListaVazia() {
         when(carroRepository.findAll()).thenReturn(Collections.emptyList());
 
         List<Carro> resultado = carroService.findAll();

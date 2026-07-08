@@ -1,22 +1,26 @@
-package br.org.edu.ifrn.LojaCarro.security;
+package br.org.edu.ifrn.lojacarro.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
 
-    // Chave secreta de teste (deve ter pelo menos 256 bits)
-    private final String SECRET_KEY = "sua_chave_secreta_super_segura_com_muitos_caracteres_123456";
-    private final long EXPIRATION_TIME = 86400000; // 1 dia em milissegundos
+    @Value("${jwt.secret}")
+    private String secretKey;
+
+    @Value("${jwt.expiration}")
+    private long expirationTime;
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+        return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateToken(String username, String role) {
@@ -24,7 +28,7 @@ public class JwtUtil {
                 .subject(username)
                 .claim("role", role)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .expiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(getSigningKey())
                 .compact();
     }
@@ -40,7 +44,7 @@ public class JwtUtil {
     public boolean isTokenValid(String token) {
         try {
             return getClaims(token).getExpiration().after(new Date());
-        } catch (Exception e) {
+        } catch (Exception exception) {
             return false;
         }
     }

@@ -1,8 +1,8 @@
-package br.org.edu.ifrn.LojaCarro.controllers;
+package br.org.edu.ifrn.lojacarro.controllers;
 
-import br.org.edu.ifrn.LojaCarro.model.Usuario;
-import br.org.edu.ifrn.LojaCarro.repository.UsuarioRepository;
-import br.org.edu.ifrn.LojaCarro.security.JwtUtil;
+import br.org.edu.ifrn.lojacarro.model.Usuario;
+import br.org.edu.ifrn.lojacarro.repository.UsuarioRepository;
+import br.org.edu.ifrn.lojacarro.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;

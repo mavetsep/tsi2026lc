@@ -1,4 +1,4 @@
-package br.org.edu.ifrn.LojaCarro.model;
+package br.org.edu.ifrn.lojacarro.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;

@@ -1,7 +1,9 @@
-package br.org.edu.ifrn.LojaCarro;
+package br.org.edu.ifrn.lojacarro;
 
-import br.org.edu.ifrn.LojaCarro.model.Usuario;
-import br.org.edu.ifrn.LojaCarro.repository.UsuarioRepository;
+import br.org.edu.ifrn.lojacarro.model.Usuario;
+import br.org.edu.ifrn.lojacarro.repository.UsuarioRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,6 +12,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @SpringBootApplication
 public class LojaCarroApplication {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(LojaCarroApplication.class);
 
 	public static void main(String[] args) {
 		SpringApplication.run(LojaCarroApplication.class, args);
@@ -24,7 +28,7 @@ public class LojaCarroApplication {
 				admin.setPassword(encoder.encode("admin123"));
 				admin.setRole("ROLE_GERENTE");
 				repo.save(admin);
-				System.out.println("=== USUÁRIO MASTER CRIADO: admin / admin123 (ROLE_GERENTE) ===");
+				LOGGER.info("Usuário master criado com login admin e perfil ROLE_GERENTE.");
 			}
 		};
 	}

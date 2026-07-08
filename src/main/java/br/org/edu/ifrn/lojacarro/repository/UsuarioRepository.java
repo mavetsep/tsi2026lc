@@ -1,6 +1,6 @@
-package br.org.edu.ifrn.LojaCarro.repository;
+package br.org.edu.ifrn.lojacarro.repository;
 
-import br.org.edu.ifrn.LojaCarro.model.Usuario;
+import br.org.edu.ifrn.lojacarro.model.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 

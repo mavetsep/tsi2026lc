@@ -1,4 +1,4 @@
-package br.org.edu.ifrn.LojaCarro.security;
+package br.org.edu.ifrn.lojacarro.security;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;

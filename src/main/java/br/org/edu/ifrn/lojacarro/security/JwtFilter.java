@@ -1,4 +1,4 @@
-package br.org.edu.ifrn.LojaCarro.security;
+package br.org.edu.ifrn.lojacarro.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
