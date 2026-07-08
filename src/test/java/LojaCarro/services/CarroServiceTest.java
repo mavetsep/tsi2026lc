@@ -1,4 +1,4 @@
-package br.org.edu.ifrn.lojacarro.services;
+package LojaCarro.services;
 
 import br.org.edu.ifrn.lojacarro.model.Carro;
 import br.org.edu.ifrn.lojacarro.repository.CarroRepository;

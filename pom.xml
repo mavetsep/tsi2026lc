@@ -142,7 +142,7 @@
 						<param>br.org.edu.ifrn.lojacarro.services.CarroService</param>
 					</targetClasses>
 					<targetTests>
-						<param>br.org.edu.ifrn.lojacarro.services.CarroServiceTest</param>
+						<param>lojacarro.services.CarroServiceTest</param>
 					</targetTests>
 					<verbose>false</verbose>
 					<jvmArgs>
